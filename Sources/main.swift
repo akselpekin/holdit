@@ -1,15 +1,20 @@
-import AppKit
+import SwiftUI
 
-// MARK: - Entry Point
 @main
-struct HoldItMain {
-    static func main() {
-        let app = NSApplication.shared
-        app.setActivationPolicy(.regular)
+struct HoldItApp: App {
+    init() {
+        // Ensure a regular Dock icon & menu bar appear
+        NSApplication.shared.setActivationPolicy(.regular)
+    }
 
-        let delegate = AppDelegate()
-        app.delegate = delegate
-
-        app.run()
+    var body: some Scene {
+        WindowGroup("holdit") {
+            // A green full-window view; define ContentView elsewhere
+            Tray()
+        }
+        .windowStyle(HiddenTitleBarWindowStyle())
+        .commands {
+            CommandGroup(replacing: .newItem) { }
+        }
     }
 }

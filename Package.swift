@@ -5,8 +5,17 @@ import PackageDescription
 
 let package = Package(
     name: "holdit",
+    platforms: [
+        .macOS(.v15)
+    ],
     targets: [
         .executableTarget(
-            name: "holdit"),
+            name: "holdit",
+            path: "Sources",
+            sources: [
+                "main.swift",
+                "Tray.swift"
+            ]
+        ),
     ]
 )
