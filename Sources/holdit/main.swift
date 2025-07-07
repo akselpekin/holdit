@@ -41,7 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let screen = NSScreen.main else { return }
         let notchHeight = screen.safeAreaInsets.top
         let notchWidth = notchHeight * 2
-        let expandedWidth = notchWidth * 8
+        let expandedWidth = notchWidth * 7
 
         let collapsedX = (screen.frame.width - notchWidth) / 2
         let expandedX = (screen.frame.width - expandedWidth) / 2
@@ -84,7 +84,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // Debugging method to show the tray
-    // This is called from the top bar
+    // This is called from the menu bar
     @objc private func showTray() {
         print("AppDelegate: showTray invoked, collapsedRect=\(collapsedRect!), expandedRect=\(expandedRect!), currentFrame=\(trayWindow.frame)")
         trayWindow.orderFrontRegardless()
