@@ -13,9 +13,9 @@ let package = Package(
             path: "Sources/GUI"
         ),
         .executableTarget(
-            name: "holdit",
+            name: "main",
             dependencies: ["GUI"],
-            path: "Sources/CORE"
+            path: "Sources/holdit"
         ),
     ]
 )
