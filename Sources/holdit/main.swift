@@ -47,7 +47,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let expandedX = (screen.frame.width - expandedWidth) / 2
         let y = screen.frame.height - notchHeight
         let collapsed = NSRect(x: collapsedX, y: y, width: notchWidth, height: notchHeight)
-        let expanded = NSRect(x: expandedX, y: y, width: expandedWidth, height: notchHeight)
+    
+        let expandedHeight: CGFloat = notchHeight + 74
+        let expandedY = screen.frame.height - expandedHeight
+        let expanded = NSRect(x: expandedX, y: expandedY, width: expandedWidth, height: expandedHeight)
         collapsedRect = collapsed
         expandedRect = expanded
 
@@ -117,13 +120,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             isExpanded = true
         }
 
-        else if !triggerRect.contains(mousePoint) && isExpanded {
-            print("GlobalMonitor: cursor exited notch region")
-            NSAnimationContext.runAnimationGroup({ ctx in
-                ctx.duration = 0.2
-                trayWindow.animator().setFrame(collapsedRect, display: true)
-            })
-            isExpanded = false
+        else if isExpanded {
+            let frame = trayWindow.frame
+            // collapse only when exiting left, right, or bottom edges
+            if mousePoint.x < frame.minX || mousePoint.x > frame.maxX || mousePoint.y < frame.minY {
+                print("GlobalMonitor: cursor left tray area on side/bottom, collapsing")
+                NSAnimationContext.runAnimationGroup({ ctx in
+                    ctx.duration = 0.2
+                    trayWindow.animator().setFrame(collapsedRect, display: true)
+                })
+                isExpanded = false
+            }
         }
     }
 }
