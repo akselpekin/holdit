@@ -1,4 +1,5 @@
 import SwiftUI
+import GUI
 
 @main
 struct HoldItApp: App {
@@ -7,12 +8,13 @@ struct HoldItApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("holdit") {
+        WindowGroup {
             Tray()
         }
         .windowStyle(HiddenTitleBarWindowStyle())
         .commands {
-            CommandGroup(replacing: .newItem) { }
+            CommandGroup(replacing: .newItem) { 
+            }
         }
     }
 }

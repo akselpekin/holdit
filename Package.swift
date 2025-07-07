@@ -8,13 +8,14 @@ let package = Package(
         .macOS(.v15)
     ],
     targets: [
+        .target(
+            name: "GUI",
+            path: "Sources/GUI"
+        ),
         .executableTarget(
             name: "holdit",
-            path: "Sources",
-            sources: [
-                "main.swift",
-                "Tray.swift"
-            ]
+            dependencies: ["GUI"],
+            path: "Sources/CORE"
         ),
     ]
 )
