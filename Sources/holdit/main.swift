@@ -83,6 +83,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    // Debugging method to show the tray
+    // This is called from the top bar
     @objc private func showTray() {
         print("AppDelegate: showTray invoked, collapsedRect=\(collapsedRect!), expandedRect=\(expandedRect!), currentFrame=\(trayWindow.frame)")
         trayWindow.orderFrontRegardless()
