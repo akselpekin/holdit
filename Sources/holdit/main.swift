@@ -28,7 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             button.image = NSImage(systemSymbolName: "circle.grid.2x2.fill", accessibilityDescription: "HoldIt")
         }
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Show Tray", action: #selector(showTray), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Show Tray [DEBUG]", action: #selector(showTray), keyEquivalent: ""))
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit HoldIt", action: #selector(quit), keyEquivalent: "q"))
         statusItem.menu = menu
