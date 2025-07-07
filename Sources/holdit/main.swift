@@ -18,6 +18,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var collapsedRect: NSRect!
     private var expandedRect: NSRect!
 
+    private var triggerRect: NSRect!
+    private let triggerPadding: CGFloat = 65
+    private var isExpanded = false
+    private var globalMonitor: Any?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("AppDelegate: applicationDidFinishLaunching called")
         NSApp.setActivationPolicy(.accessory)
@@ -46,6 +51,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         collapsedRect = collapsed
         expandedRect = expanded
 
+        let triggerX = collapsed.origin.x - triggerPadding
+        let triggerWidth = collapsed.width + triggerPadding * 2
+        let triggerY = collapsed.origin.y
+        triggerRect = NSRect(x: triggerX, y: triggerY, width: triggerWidth, height: screen.frame.height)
+
         trayWindow = NSPanel(
             contentRect: collapsed,
             styleMask: [.borderless, .nonactivatingPanel],
@@ -64,15 +74,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let hosting = NSHostingController(rootView: Tray())
         trayWindow.contentViewController = hosting
         trayWindow.makeKeyAndOrderFront(nil)
-        if let contentView = trayWindow.contentView {
-            contentView.trackingAreas.forEach { contentView.removeTrackingArea($0) }
-            let area = NSTrackingArea(
-                rect: contentView.bounds,
-                options: [.mouseEnteredAndExited, .mouseMoved, .activeInActiveApp, .inVisibleRect],
-                owner: self,
-                userInfo: nil
-            )
-            contentView.addTrackingArea(area)
+        // Install a global mouse-moved monitor to detect hover near notch
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] _ in
+            self?.handleGlobalMouseMoved()
         }
     }
 
@@ -94,23 +98,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+        isExpanded = true
     }
     @objc private func quit() {
         print("AppDelegate: quit invoked")
         NSApp.terminate(nil)
     }
-    @objc func mouseEntered(with event: NSEvent) {
-        print("AppDelegate: mouseEntered window")
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.2
-            trayWindow.animator().setFrame(expandedRect, display: true)
+
+    private func handleGlobalMouseMoved() {
+        let mousePoint = NSEvent.mouseLocation
+        
+        if triggerRect.contains(mousePoint) && !isExpanded {
+            print("GlobalMonitor: cursor entered notch region")
+            NSAnimationContext.runAnimationGroup({ ctx in
+                ctx.duration = 0.2
+                trayWindow.animator().setFrame(expandedRect, display: true)
+            })
+            isExpanded = true
         }
-    }
-    @objc func mouseExited(with event: NSEvent) {
-        print("AppDelegate: mouseExited window")
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.2
-            trayWindow.animator().setFrame(collapsedRect, display: true)
+
+        else if !triggerRect.contains(mousePoint) && isExpanded {
+            print("GlobalMonitor: cursor exited notch region")
+            NSAnimationContext.runAnimationGroup({ ctx in
+                ctx.duration = 0.2
+                trayWindow.animator().setFrame(collapsedRect, display: true)
+            })
+            isExpanded = false
         }
     }
 }
