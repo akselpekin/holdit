@@ -48,7 +48,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let y = screen.frame.height - notchHeight
         let collapsed = NSRect(x: collapsedX, y: y, width: notchWidth, height: notchHeight)
     
-        let expandedHeight: CGFloat = notchHeight + 74
+        // populate "n" test items for the tray
+        let itemsList = (1...10).map { ("folder.fill", "Item \($0)") }
+
+        let itemsPerRow = 5
+        let rows = min(10, Int(ceil(Double(itemsList.count) / Double(itemsPerRow))))
+    
+        let itemSize: CGFloat = 64
+        let labelSpacing: CGFloat = 10
+        let spacing: CGFloat = 12
+        let bottomPadding: CGFloat = spacing * 3
+        let contentHeight = CGFloat(rows) * (itemSize + labelSpacing) + spacing * CGFloat(rows + 1)
+        let expandedHeight = notchHeight + contentHeight + bottomPadding
         let expandedY = screen.frame.height - expandedHeight
         let expanded = NSRect(x: expandedX, y: expandedY, width: expandedWidth, height: expandedHeight)
         collapsedRect = collapsed
@@ -74,7 +85,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         trayWindow.hasShadow = false
         trayWindow.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
-        let hosting = NSHostingController(rootView: Tray())
+        let hosting = NSHostingController(rootView: Tray(items: itemsList, topPadding: notchHeight))
         trayWindow.contentViewController = hosting
         trayWindow.makeKeyAndOrderFront(nil)
         //global mouse-moved monitor
