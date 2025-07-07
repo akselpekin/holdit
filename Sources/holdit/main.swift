@@ -74,7 +74,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let hosting = NSHostingController(rootView: Tray())
         trayWindow.contentViewController = hosting
         trayWindow.makeKeyAndOrderFront(nil)
-        // Install a global mouse-moved monitor to detect hover near notch
+        //global mouse-moved monitor
         globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] _ in
             self?.handleGlobalMouseMoved()
         }
