@@ -1,15 +1,15 @@
 import SwiftUI
 import Cocoa
+import Foundation
 
 public struct Tray: View {
-    // Placeholder items: (SF Symbol icon, label)
-    private let items: [(icon: String, name: String)]
+    
+    @ObservedObject private var model: TrayModel
+    @State private var isTargeted: Bool = false
     private let topPadding: CGFloat
 
-    // Parameters: items are fallback here the auhoritative source is in main.swift
-    // Parameters: topPadding disallows items to go under the notch
-    public init(items: [(String, String)]? = nil, topPadding: CGFloat = 0) {
-        self.items = items ?? (1...20).map { ("folder.fill", "Item \($0)") }
+    public init(model: TrayModel, topPadding: CGFloat = 0) {
+        self.model = model
         self.topPadding = topPadding
     }
 
@@ -21,16 +21,15 @@ public struct Tray: View {
 
             VStack(spacing: 0) {
                 Spacer().frame(height: topPadding)
-                ScrollView { //grid
+                ScrollView {
                     LazyVGrid(columns: columns, spacing: spacing) {
-                        ForEach(items, id: \.name) { item in
+                        ForEach(model.items) { file in
                             VStack(spacing: 10) {
-                                Image(systemName: item.icon)
+                                file.icon
                                     .resizable()
                                     .scaledToFit()
                                     .frame(width: itemSize, height: itemSize)
-                                    .foregroundColor(.white)
-                                Text(item.name)
+                                Text(file.name)
                                     .font(.caption)
                                     .foregroundColor(.white)
                                     .lineLimit(1)
@@ -40,11 +39,27 @@ public struct Tray: View {
                     }
                     .padding(.all, spacing)
                 }
+                .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
+                    providers.first?.loadDataRepresentation(forTypeIdentifier: "public.file-url") { data, _ in
+                        guard let data = data,
+                              let urlString = String(data: data, encoding: .utf8),
+                              let url = URL(string: urlString) else { return }
+                        DispatchQueue.main.async {
+                            model.add(FileItem(url: url))
+                        }
+                    }
+                    return true
+                }
             }
-            .background(Color.green)
+            .background(isTargeted ? Color.blue : Color.clear)
             .frame(width: geo.size.width, height: geo.size.height)
             .background(.ultraThinMaterial)
             .cornerRadius(12)
+            .contextMenu {
+                Button("Clear Tray") {
+                    model.clear()
+                }
+            }
         }
     }
 }
