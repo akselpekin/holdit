@@ -44,6 +44,7 @@ public struct Tray: View {
                                 RoundedRectangle(cornerRadius: 6)
                                     .stroke(selectedIDs.contains(file.id) ? Color.accentColor : Color.clear, lineWidth: 2)
                             )
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
                             .onTapGesture {
                                 let shift = NSEvent.modifierFlags.contains(.shift)
                                 if shift, let anchor = anchorIndex {
@@ -94,6 +95,7 @@ public struct Tray: View {
                          }
                     }
                     .padding(.all, spacing)
+                    .animation(.easeInOut(duration: 0.2), value: model.items)
                 }
                 .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
                     providers.first?.loadDataRepresentation(forTypeIdentifier: "public.file-url") { data, _ in
@@ -104,20 +106,47 @@ public struct Tray: View {
                             let newItem = FileItem(url: url)
                             let added = model.add(newItem)
                             if !added {
-                    
+                                // flash red overlay for duplicate
                                 showDuplicateError = true
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                                     showDuplicateError = false
                                 }
+                            }
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                _ = added
                             }
                         }
                     }
                     return true
                 }
             }
-            .background(showDuplicateError ? Color.red : (isTargeted ? Color.blue : Color.clear))
-            .frame(width: geo.size.width, height: geo.size.height)
+            .background(
+                Group {
+                    if showDuplicateError {
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.4), Color.red.opacity(0)]),
+                            startPoint: .bottom,
+                            endPoint: .top
+                        )
+                    } else if isTargeted {
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.blue.opacity(0.8), Color.blue.opacity(0.4), Color.blue.opacity(0)]),
+                            startPoint: .bottom,
+                            endPoint: .top
+                        )
+                    } else {
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.black.opacity(0.8), Color.black.opacity(0.4), Color.black.opacity(0)]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    }
+                }
+                .animation(.easeInOut(duration: 0.3), value: showDuplicateError)
+                .animation(.easeInOut(duration: 0.3), value: isTargeted)
+            )
             .background(.ultraThinMaterial)
+            .frame(width: geo.size.width, height: geo.size.height)
             .cornerRadius(12)
             .contentShape(Rectangle())
             .onTapGesture {
