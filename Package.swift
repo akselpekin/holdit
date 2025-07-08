@@ -10,6 +10,7 @@ let package = Package(
     targets: [
         .target(
             name: "GUI",
+            dependencies: ["LOGIC"],
             path: "Sources/GUI"
         ),
         .target(

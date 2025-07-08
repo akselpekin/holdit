@@ -106,7 +106,7 @@ public struct Tray: View {
                             let newItem = FileItem(url: url)
                             let added = model.add(newItem)
                             if !added {
-                                // flash red overlay for duplicate
+                       
                                 showDuplicateError = true
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                                     showDuplicateError = false
