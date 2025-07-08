@@ -12,9 +12,13 @@ let package = Package(
             name: "GUI",
             path: "Sources/GUI"
         ),
+        .target(
+            name: "LOGIC",
+            path: "Sources/LOGIC"
+        ),
         .executableTarget(
             name: "main",
-            dependencies: ["GUI"],
+            dependencies: ["GUI", "LOGIC"],
             path: "Sources/holdit"
         ),
     ]

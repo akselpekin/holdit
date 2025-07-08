@@ -1,6 +1,7 @@
 import SwiftUI
 import Cocoa
 import Foundation
+import LOGIC
 
 public struct Tray: View {
     

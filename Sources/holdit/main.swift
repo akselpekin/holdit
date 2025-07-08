@@ -1,5 +1,6 @@
 import SwiftUI
 import GUI
+import LOGIC
 import AppKit
 
 @main
