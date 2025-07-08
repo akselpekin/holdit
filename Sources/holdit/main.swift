@@ -33,11 +33,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
          statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
          if let button = statusItem.button {
-             button.image = NSImage(systemSymbolName: "circle.grid.2x2.fill", accessibilityDescription: "HoldIt")
+             button.image = NSImage(systemSymbolName: "rectangle.and.paperclip", accessibilityDescription: "HoldIt")
          }
          let menu = NSMenu()
-         menu.addItem(NSMenuItem(title: "Show Tray [DEBUG]", action: #selector(showTray), keyEquivalent: ""))
-         menu.addItem(NSMenuItem(title: "Clear Tray [DEBUG]", action: #selector(clearTray), keyEquivalent: ""))
+         //menu.addItem(NSMenuItem(title: "Show Tray [DEBUG]", action: #selector(showTray), keyEquivalent: ""))
+         menu.addItem(NSMenuItem(title: "Clear Tray", action: #selector(clearTray), keyEquivalent: ""))
          menu.addItem(.separator())
          menu.addItem(NSMenuItem(title: "Quit HoldIt", action: #selector(quit), keyEquivalent: "q"))
          statusItem.menu = menu
@@ -90,7 +90,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
      // Debugging method to show the tray
      // This is called from the menu bar
-     @objc private func showTray() {
+     /*@objc private func showTray() {
          print("AppDelegate: showTray invoked, collapsedRect=\(collapsedRect!), expandedRect=\(expandedRect!), currentFrame=\(trayWindow.frame)")
          trayWindow.orderFrontRegardless()
          NSApp.activate(ignoringOtherApps: true)
@@ -109,13 +109,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
              }
          }
          isExpanded = true
-     }
+     }*/
+
      @objc private func quit() {
          print("AppDelegate: quit invoked")
          NSApp.terminate(nil)
      }
     
-    /// Debug method to clear all items from the tray
     @objc private func clearTray() {
         print("AppDelegate: clearTray invoked")
         trayModel.clear()
