@@ -124,7 +124,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
          let mousePoint = NSEvent.mouseLocation
         
          if triggerRect.contains(mousePoint) && !isExpanded {
-             print("GlobalMonitor: cursor entered notch region")
+             //print("GlobalMonitor: cursor entered notch region")
              NSAnimationContext.runAnimationGroup({ ctx in
                  ctx.duration = 0.2
                  trayWindow.animator().setFrame(expandedRect, display: true)
@@ -136,7 +136,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
              let frame = trayWindow.frame
         
              if mousePoint.x < frame.minX || mousePoint.x > frame.maxX || mousePoint.y < frame.minY {
-                 print("GlobalMonitor: cursor left tray area on side/bottom, collapsing")
+                 //print("GlobalMonitor: cursor left tray area on side/bottom, collapsing")
                  NSAnimationContext.runAnimationGroup({ ctx in
                      ctx.duration = 0.2
                      trayWindow.animator().setFrame(collapsedRect, display: true)
