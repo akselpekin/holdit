@@ -81,7 +81,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
          trayWindow.contentViewController = hosting
          trayWindow.makeKeyAndOrderFront(nil)
 
-         globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] _ in
+         
+         globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDragged]) { [weak self] _ in
              self?.handleGlobalMouseMoved()
          }
      }
