@@ -1,3 +1,5 @@
+![holdit Logo](holdit_icon_raw.png)
+
 # holdit
 
 A macOS utility accessory that reveals a expanding tray behind the notch when you hover or drag files over it. The tray displays files and folders in a grid, supports drag-and-drop, context menus, batch removal, and keeps its energy impact at Apple’s designated “Low” level.
