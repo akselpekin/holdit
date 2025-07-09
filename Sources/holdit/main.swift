@@ -12,7 +12,7 @@ class TriggerView: NSView {
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         wantsLayer = true
-        layer?.backgroundColor = NSColor.black.cgColor
+            layer?.backgroundColor = NSColor.black.withAlphaComponent(0.001).cgColor
 
         registerForDraggedTypes([.fileURL])
         installHoverTracking()
@@ -91,8 +91,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private let trayModel = TrayModel()
 
-    private let triggerPadding: CGFloat = 65  // horizontal padding around notch
-    private let triggerVerticalPadding: CGFloat = 10  // vertical padding around notch
+    private let triggerPadding: CGFloat = 60  // horizontal padding around notch
+    private let triggerVerticalPadding: CGFloat = 1 // vertical padding around notch
     
     var triggerPanel: TriggerPanel!
     var trayWindow: TrayPanel!
