@@ -53,7 +53,7 @@ class TriggerPanel: NSPanel {
     override init(contentRect: NSRect, styleMask style: NSWindow.StyleMask, backing: NSWindow.BackingStoreType, defer flag: Bool) {
         super.init(contentRect: contentRect, styleMask: style, backing: backing, defer: flag)
     }
-    required init?(coder: NSCoder) { fatalError("init(coder:) not implemented") }
+    required init?(coder: NSCoder) { fatalError("init(coder:)") }
 }
 
 // MARK: - TrayPanel
