@@ -17,7 +17,7 @@ class TriggerView: NSView {
         registerForDraggedTypes([.fileURL])
         installHoverTracking()
     }
-    required init?(coder: NSCoder) { fatalError("init(coder:) not implemented") }
+    required init?(coder: NSCoder) { fatalError("init(coder:)") }
 
     func installHoverTracking() {
         TriggerHandler.installHoverTracking(on: self, areaRef: &hoverTrackingArea)
@@ -33,7 +33,10 @@ class TriggerView: NSView {
     }
 
     override func mouseEntered(with event: NSEvent) {
-        TriggerHandler.handleMouseEntered { [weak self] in self?.hoverDelegate?.expandTray() }
+       
+        if let delegate = hoverDelegate, !delegate.isTrayEmpty {
+            delegate.expandTray()
+        }
     }
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
@@ -90,6 +93,10 @@ struct HoldItApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private let trayModel = TrayModel()
+  
+    var isTrayEmpty: Bool {
+        trayModel.items.isEmpty
+    }
 
     private let triggerPadding: CGFloat = 60  // horizontal padding around notch
     private let triggerVerticalPadding: CGFloat = 1 // vertical padding around notch

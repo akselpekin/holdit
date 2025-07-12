@@ -36,12 +36,37 @@ public class TrayModel: ObservableObject {
         let currentItems = items
        
         DispatchQueue.global(qos: .utility).async {
-            let validItems = currentItems.filter { FileManager.default.fileExists(atPath: $0.url.path) }
-            guard validItems.count != currentItems.count else { return }
-            
+            // Attempt to re-link or remove missing files
+            var updated = currentItems
+            for (index, item) in currentItems.enumerated().reversed() {
+                let path = item.url.path
+                if !FileManager.default.fileExists(atPath: path) {
+                    // try to find a file with same name in parent directory
+                    let parentDir = URL(fileURLWithPath: path).deletingLastPathComponent()
+                    if let files = try? FileManager.default.contentsOfDirectory(at: parentDir,
+                                                                               includingPropertiesForKeys: nil,
+                                                                               options: [.skipsHiddenFiles]),
+                       let match = files.first(where: { $0.lastPathComponent == item.url.lastPathComponent }) {
+                        // re-link moved/renamed file
+                        updated[index] = FileItem(url: match)
+                    } else {
+                        // remove if truly missing
+                        updated.remove(at: index)
+                    }
+                }
+            }
+            // Remove duplicate paths
+            var seen = Set<String>()
+            let uniqueItems = updated.filter { item in
+                let p = item.url.path
+                if seen.contains(p) { return false }
+                seen.insert(p)
+                return true
+            }
+            guard uniqueItems.count != currentItems.count else { return }
             DispatchQueue.main.async {
-                self.items = validItems
-                self.pathSet = Set(validItems.map { $0.url.path })
+                self.items = uniqueItems
+                self.pathSet = Set(uniqueItems.map { $0.url.path })
             }
         }
     }
