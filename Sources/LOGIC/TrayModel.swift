@@ -36,37 +36,54 @@ public class TrayModel: ObservableObject {
         let currentItems = items
        
         DispatchQueue.global(qos: .utility).async {
-            // Attempt to re-link or remove missing files
-            var updated = currentItems
-            for (index, item) in currentItems.enumerated().reversed() {
+
+            let parentDirs = Set(currentItems.map { URL(fileURLWithPath: $0.url.path).deletingLastPathComponent() })
+            var dirCache = [URL: [URL]]()
+            for dir in parentDirs {
+                if let files = try? FileManager.default.contentsOfDirectory(at: dir,
+                                                                           includingPropertiesForKeys: nil,
+                                                                           options: [.skipsHiddenFiles]) {
+                    dirCache[dir] = files
+                }
+            }
+       
+            let resourceKeys: Set<URLResourceKey> = [.isRegularFileKey]
+            var existenceMap = [String: Bool]()
+            for item in currentItems {
+                let url = item.url
+                let isFile = (try? url.resourceValues(forKeys: resourceKeys).isRegularFile) ?? false
+                existenceMap[url.path] = isFile
+            }
+         
+            var buffer = [FileItem]()
+            buffer.reserveCapacity(currentItems.count)
+            var seen = Set<String>()
+            for item in currentItems {
                 let path = item.url.path
-                if !FileManager.default.fileExists(atPath: path) {
-                    // try to find a file with same name in parent directory
+                var candidate: FileItem?
+                if existenceMap[path] ?? false {
+                    candidate = item
+                } else {
                     let parentDir = URL(fileURLWithPath: path).deletingLastPathComponent()
-                    if let files = try? FileManager.default.contentsOfDirectory(at: parentDir,
-                                                                               includingPropertiesForKeys: nil,
-                                                                               options: [.skipsHiddenFiles]),
+                    if let files = dirCache[parentDir],
                        let match = files.first(where: { $0.lastPathComponent == item.url.lastPathComponent }) {
-                        // re-link moved/renamed file
-                        updated[index] = FileItem(url: match)
-                    } else {
-                        // remove if truly missing
-                        updated.remove(at: index)
+                        candidate = FileItem(url: match)
+                    }
+                }
+                if let itemToAdd = candidate {
+                    let p = itemToAdd.url.path
+                    if !seen.contains(p) {
+                        seen.insert(p)
+                        buffer.append(itemToAdd)
                     }
                 }
             }
-            // Remove duplicate paths
-            var seen = Set<String>()
-            let uniqueItems = updated.filter { item in
-                let p = item.url.path
-                if seen.contains(p) { return false }
-                seen.insert(p)
-                return true
-            }
-            guard uniqueItems.count != currentItems.count else { return }
-            DispatchQueue.main.async {
-                self.items = uniqueItems
-                self.pathSet = Set(uniqueItems.map { $0.url.path })
+            let oldPaths = currentItems.map { $0.url.path }
+            let newPaths = buffer.map { $0.url.path }
+            guard newPaths != oldPaths else { return }
+             DispatchQueue.main.async {
+                 self.items = buffer
+                 self.pathSet = Set(buffer.map { $0.url.path })
             }
         }
     }
