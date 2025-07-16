@@ -40,4 +40,4 @@ A macOS utility accessory that reveals a expanding tray behind the notch when yo
 - **GUI**: SwiftUI `Tray` view displaying items in a grid with smooth animations.
 
 ## Energy Impact
-All event monitoring uses local `NSTrackingArea` and one-time offloaded `.utility` work queues, ensuring App Nap compatibility and “Low” energy impact.
+All event monitoring uses local `NSTrackingArea` and one-time offloaded `.utility` work queues, ensuring “Low” energy impact.
