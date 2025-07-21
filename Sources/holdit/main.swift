@@ -209,9 +209,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func expandTray() {
          guard !isExpanded else { return }
     
-        trayModel.sanityCheck()
          isExpanded = true
          
+         trayModel.sanityCheck()
+
          if let tv = triggerPanel.contentView as? TriggerView { tv.removeHoverTracking() }
          triggerPanel.orderOut(nil)
          

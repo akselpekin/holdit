@@ -6,30 +6,38 @@ public class TrayModel: ObservableObject {
     @Published public private(set) var items: [FileItem]
 
     private var pathSet = Set<String>()
+    private var idSet = Set<String>()
 
     public init(initialItems: [FileItem] = []) {
         self.items = initialItems
         pathSet = Set(initialItems.map { $0.url.path })
+ 
+       idSet = Set(initialItems.compactMap { fsID(of: $0) })
     }
 
     public func add(_ item: FileItem) -> Bool {
-        let newPath = item.url.path
-        guard !pathSet.contains(newPath) else { return false }
+        if let id = fsID(of: item) {
+            if idSet.contains(id) { return false }
+        } else if pathSet.contains(item.url.path) {
+            return false
+        }
         items.append(item)
-        pathSet.insert(newPath)
+        pathSet.insert(item.url.path)
+        if let id = fsID(of: item) { idSet.insert(id) }
         return true
     }
 
     public func clear() {
         items.removeAll()
         pathSet.removeAll()
+        idSet.removeAll()
     }
 
     public func remove(_ item: FileItem) {
         items.removeAll { $0.id == item.id }
         pathSet.remove(item.url.path)
+        if let id = fsID(of: item) { idSet.remove(id) }
     }
-
 
     public func sanityCheck() {
        
@@ -37,45 +45,20 @@ public class TrayModel: ObservableObject {
        
         DispatchQueue.global(qos: .utility).async {
 
-            let parentDirs = Set(currentItems.map { URL(fileURLWithPath: $0.url.path).deletingLastPathComponent() })
-            var dirCache = [URL: [URL]]()
-            for dir in parentDirs {
-                if let files = try? FileManager.default.contentsOfDirectory(at: dir,
-                                                                           includingPropertiesForKeys: nil,
-                                                                           options: [.skipsHiddenFiles]) {
-                    dirCache[dir] = files
-                }
-            }
-       
-            let resourceKeys: Set<URLResourceKey> = [.isRegularFileKey]
-            var existenceMap = [String: Bool]()
-            for item in currentItems {
-                let url = item.url
-                let isFile = (try? url.resourceValues(forKeys: resourceKeys).isRegularFile) ?? false
-                existenceMap[url.path] = isFile
-            }
-         
             var buffer = [FileItem]()
             buffer.reserveCapacity(currentItems.count)
             var seen = Set<String>()
             for item in currentItems {
-                let path = item.url.path
-                var candidate: FileItem?
-                if existenceMap[path] ?? false {
-                    candidate = item
-                } else {
-                    let parentDir = URL(fileURLWithPath: path).deletingLastPathComponent()
-                    if let files = dirCache[parentDir],
-                       let match = files.first(where: { $0.lastPathComponent == item.url.lastPathComponent }) {
-                        candidate = FileItem(url: match)
-                    }
+                let url = item.url
+                let isReachable = (try? url.checkResourceIsReachable()) ?? false
+                guard isReachable else { continue }
+                if let values = try? url.resourceValues(forKeys: [.isDirectoryKey]), values.isDirectory == true {
+                    continue
                 }
-                if let itemToAdd = candidate {
-                    let p = itemToAdd.url.path
-                    if !seen.contains(p) {
-                        seen.insert(p)
-                        buffer.append(itemToAdd)
-                    }
+                let p = url.path
+                if !seen.contains(p) {
+                    seen.insert(p)
+                    buffer.append(item)
                 }
             }
             let oldPaths = currentItems.map { $0.url.path }
@@ -86,5 +69,15 @@ public class TrayModel: ObservableObject {
                  self.pathSet = Set(buffer.map { $0.url.path })
             }
         }
+    }
+    
+    private func fsID(of item: FileItem) -> String? {
+        let fm = FileManager.default
+        guard let attrs = try? fm.attributesOfItem(atPath: item.url.path),
+              let num = (attrs[.systemFileNumber] as? NSNumber)?.uint64Value,
+              let dev = (attrs[.systemNumber] as? NSNumber)?.uint64Value else {
+            return nil
+        }
+        return "\(dev):\(num)"
     }
 }
