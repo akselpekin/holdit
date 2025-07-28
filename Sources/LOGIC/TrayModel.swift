@@ -52,9 +52,6 @@ public class TrayModel: ObservableObject {
                 let url = item.url
                 let isReachable = (try? url.checkResourceIsReachable()) ?? false
                 guard isReachable else { continue }
-                if let values = try? url.resourceValues(forKeys: [.isDirectoryKey]), values.isDirectory == true {
-                    continue
-                }
                 let p = url.path
                 if !seen.contains(p) {
                     seen.insert(p)
