@@ -3,9 +3,9 @@ import SwiftUI
 
 public struct FileItem: Identifiable, Hashable {
     public let id: UUID
+    public let fsID: String?
 
     private let storedURL: URL
-    private let bookmarkData: Data
 
     public var name: String { url.lastPathComponent }
 
@@ -14,51 +14,35 @@ public struct FileItem: Identifiable, Hashable {
 
     @MainActor
     public var icon: Image {
-        let url = resolvedURL
+        let url = self.url
         let key = url.path as NSString
         if let cached = FileItem.iconCache.object(forKey: key) {
             return Image(nsImage: cached)
         }
         
-        var image: NSImage
-        if url.startAccessingSecurityScopedResource() {
-            image = NSWorkspace.shared.icon(forFile: url.path)
-            url.stopAccessingSecurityScopedResource()
-        } else {
-            image = NSWorkspace.shared.icon(forFile: url.path)
-        }
+        let image = NSWorkspace.shared.icon(forFile: url.path)
         image.size = NSSize(width: 64, height: 64)
         FileItem.iconCache.setObject(image, forKey: key)
         return Image(nsImage: image)
     }
 
-    public init(url: URL) {
-        self.id = UUID()
+    public init(url: URL, id: UUID = UUID()) {
+        self.id = id
         self.storedURL = url
-     
-        if let data = try? url.bookmarkData(options: [.withSecurityScope],
-                                           includingResourceValuesForKeys: nil,
-                                           relativeTo: nil) {
-            self.bookmarkData = data
+        
+        // Calculate fsID
+        let fm = FileManager.default
+        if let attrs = try? fm.attributesOfItem(atPath: url.path),
+           let num = (attrs[.systemFileNumber] as? NSNumber)?.uint64Value,
+           let dev = (attrs[.systemNumber] as? NSNumber)?.uint64Value {
+            self.fsID = "\(dev):\(num)"
         } else {
-            self.bookmarkData = Data()
+            self.fsID = nil
         }
-    }
-
-    // Resolve the bookmark into a usable URL, fallback to storedURL
-    private var resolvedURL: URL {
-        var isStale = false
-        if let url = try? URL(resolvingBookmarkData: bookmarkData,
-                               options: [.withSecurityScope],
-                               relativeTo: nil,
-                               bookmarkDataIsStale: &isStale) {
-            return url
-        }
-        return storedURL
     }
     
     // Public URL property
-    public var url: URL { resolvedURL }
+    public var url: URL { storedURL }
 }
 
 // Sendable for async closures
