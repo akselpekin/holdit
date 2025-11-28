@@ -2,17 +2,24 @@ import SwiftUI
 import Cocoa
 import LOGIC
 
+public class TrayUIState: ObservableObject {
+    @Published public var isReady: Bool = false
+    public init() {}
+}
+
 public struct Tray: View {
     
     @ObservedObject private var model: TrayModel
+    @ObservedObject private var uiState: TrayUIState
     @State private var isTargeted: Bool = false
     @State private var showDuplicateError: Bool = false
     @State private var selectedIDs: Set<FileItem.ID> = []
     @State private var anchorIndex: Int?
     private let topPadding: CGFloat
 
-    public init(model: TrayModel, topPadding: CGFloat = 0) {
+    public init(model: TrayModel, uiState: TrayUIState, topPadding: CGFloat = 0) {
         self.model = model
+        self.uiState = uiState
         self.topPadding = topPadding
     }
 
@@ -111,29 +118,34 @@ public struct Tray: View {
             }
             .onDrop(of: [.fileURL], isTargeted: $isTargeted, perform: handleDrop)
             .background(
-                Group {
-                    if showDuplicateError {
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.4), Color.red.opacity(0)]),
-                            startPoint: .bottom,
-                            endPoint: .top
-                        )
-                    } else if isTargeted {
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color.blue.opacity(0.8), Color.blue.opacity(0.4), Color.blue.opacity(0)]),
-                            startPoint: .bottom,
-                            endPoint: .top
-                        )
-                    } else {
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color.black.opacity(0.8), Color.black.opacity(0.4), Color.black.opacity(0)]),
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    }
+                ZStack {
+                    // Default Black Gradient
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.black.opacity(0.8), Color.black.opacity(0.4), Color.black.opacity(0)]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .opacity((uiState.isReady && (isTargeted || showDuplicateError)) ? 0 : 1)
+
+                    // Targeted Blue Gradient
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.blue.opacity(0.8), Color.blue.opacity(0.4), Color.blue.opacity(0)]),
+                        startPoint: .bottom,
+                        endPoint: .top
+                    )
+                    .opacity((uiState.isReady && isTargeted && !showDuplicateError) ? 1 : 0)
+
+                    // Error Red Gradient
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.red.opacity(0.8), Color.red.opacity(0.4), Color.red.opacity(0)]),
+                        startPoint: .bottom,
+                        endPoint: .top
+                    )
+                    .opacity((uiState.isReady && showDuplicateError) ? 1 : 0)
                 }
                 .animation(.easeInOut(duration: 0.3), value: showDuplicateError)
-                .animation(.easeInOut(duration: 0.3), value: isTargeted)
+                .animation(.easeInOut(duration: 0.8), value: isTargeted)
+                .animation(.easeInOut(duration: 0.8), value: uiState.isReady)
             )
             .background(.ultraThinMaterial)
             .frame(width: geo.size.width, height: geo.size.height)
@@ -156,8 +168,10 @@ public struct Tray: View {
             if provider.canLoadObject(ofClass: URL.self) {
                 _ = provider.loadObject(ofClass: URL.self) { url, _ in
                     guard let url = url else { return }
+                    
+                    let newItem = FileItem(url: url)
+                    
                     DispatchQueue.main.async {
-                        let newItem = FileItem(url: url)
                         let added = model.add(newItem)
                         if !added {
                             showDuplicateError = true

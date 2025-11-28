@@ -38,12 +38,25 @@ public class TrayModel: ObservableObject {
         if let id = item.fsID { idSet.remove(id) }
     }
 
+    private var isChecking = false
+
     public func sanityCheck() {
+        guard !isChecking else {
+            print("TrayModel: sanity check skipped (already running)")
+            return
+        }
+        isChecking = true
+        print("TrayModel: is checking...")
        
         let currentItems = items
         let knownPaths = pathSet
        
         DispatchQueue.global(qos: .utility).async {
+            defer {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+                    self?.isChecking = false
+                }
+            }
 
             var buffer = [FileItem]()
             buffer.reserveCapacity(currentItems.count)

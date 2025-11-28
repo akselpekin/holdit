@@ -93,6 +93,7 @@ struct HoldItApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private let trayModel = TrayModel()
+    private let trayUIState = TrayUIState()
   
     var isTrayEmpty: Bool {
         trayModel.items.isEmpty
@@ -123,27 +124,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))
         statusItem.menu = menu
 
-        guard let screen = NSScreen.main else { return }
-        let notchHeight = screen.safeAreaInsets.top
-        let notchWidth = notchHeight * 2
-        let expandedWidth = notchWidth * 7
+        updateScreenLayout()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(screenChanged), name: NSApplication.didChangeScreenParametersNotification, object: nil)
 
-        let collapsedX = (screen.frame.width - notchWidth) / 2
-        let expandedX = (screen.frame.width - expandedWidth) / 2
-        let y = screen.frame.height - notchHeight
-        let collapsed = NSRect(x: collapsedX, y: y, width: notchWidth, height: notchHeight)
-    
-        let expandedHeight = notchHeight + 200
-        let expandedY = screen.frame.height - expandedHeight
-        let expanded = NSRect(x: expandedX, y: expandedY, width: expandedWidth, height: expandedHeight)
-        collapsedRect = collapsed
-        expandedRect = expanded
+        let triggerX = collapsedRect.origin.x - triggerPadding
+        let triggerWidth = collapsedRect.width + triggerPadding * 2
 
-        let triggerX = collapsed.origin.x - triggerPadding
-        let triggerWidth = collapsed.width + triggerPadding * 2
-
-        let triggerY = collapsed.origin.y - triggerVerticalPadding
-        let triggerHeight = collapsed.height + triggerVerticalPadding * 2
+        let triggerY = collapsedRect.origin.y - triggerVerticalPadding
+        let triggerHeight = collapsedRect.height + triggerVerticalPadding * 2
         let triggerRect = NSRect(x: triggerX, y: triggerY, width: triggerWidth, height: triggerHeight)
       
         triggerPanel = TriggerPanel(
@@ -172,7 +161,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     
         trayWindow = TrayPanel(
-            contentRect: collapsed,
+            contentRect: collapsedRect,
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -187,7 +176,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         trayWindow.hasShadow = false
         trayWindow.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
-        let hosting = NSHostingController(rootView: Tray(model: trayModel, topPadding: notchHeight))
+        let hosting = NSHostingController(rootView: Tray(model: trayModel, uiState: trayUIState, topPadding: collapsedRect.height))
         trayWindow.contentViewController = hosting
         trayWindow.makeKeyAndOrderFront(nil)
        
@@ -210,6 +199,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
          guard !isExpanded else { return }
     
          isExpanded = true
+         trayUIState.isReady = false
          
          trayModel.sanityCheck()
 
@@ -221,12 +211,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
              ctx.duration = 0.2
              trayWindow.animator().setFrame(expandedRect, display: true)
          }, completionHandler: {
-             self.trayWindow.installTrackingArea()
-             self.trayWindow.makeKeyAndOrderFront(nil)
-             // Cursor sanity check
-             let mouseLoc = NSEvent.mouseLocation
-             if !self.expandedRect.contains(mouseLoc) {
-                 self.collapseTray()
+             DispatchQueue.main.async {
+                 self.trayUIState.isReady = true
+                 self.trayWindow.installTrackingArea()
+                 self.trayWindow.makeKeyAndOrderFront(nil)
+                 // Cursor sanity check
+                 let mouseLoc = NSEvent.mouseLocation
+                 if !self.expandedRect.contains(mouseLoc) {
+                     self.collapseTray()
+                 }
              }
          })
      }
@@ -234,14 +227,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
      func collapseTray() {
          guard isExpanded else { return }
          isExpanded = false
+         trayUIState.isReady = false
         
          self.trayWindow.removeTrackingArea()
          NSAnimationContext.runAnimationGroup({ ctx in
              ctx.duration = 0.2
              trayWindow.animator().setFrame(collapsedRect, display: true)
          }, completionHandler: {
-             if let tv = self.triggerPanel.contentView as? TriggerView { tv.installHoverTracking() }
-             self.triggerPanel.makeKeyAndOrderFront(nil)
+             DispatchQueue.main.async {
+                 if let tv = self.triggerPanel.contentView as? TriggerView { tv.installHoverTracking() }
+                 self.triggerPanel.makeKeyAndOrderFront(nil)
+             }
          })
      }
+    
+    @objc private func screenChanged() {
+        updateScreenLayout()
+    }
+
+    private func updateScreenLayout() {
+        guard let screen = NSScreen.main else { return }
+        let notchHeight = screen.safeAreaInsets.top
+        let notchWidth = notchHeight * 2
+        let expandedWidth = notchWidth * 7
+
+        let collapsedX = (screen.frame.width - notchWidth) / 2
+        let expandedX = (screen.frame.width - expandedWidth) / 2
+        let y = screen.frame.height - notchHeight
+        
+        collapsedRect = NSRect(x: collapsedX, y: y, width: notchWidth, height: notchHeight)
+    
+        let expandedHeight = notchHeight + 200
+        let expandedY = screen.frame.height - expandedHeight
+        expandedRect = NSRect(x: expandedX, y: expandedY, width: expandedWidth, height: expandedHeight)
+        
+        if let triggerPanel = triggerPanel {
+            let triggerX = collapsedRect.origin.x - triggerPadding
+            let triggerWidth = collapsedRect.width + triggerPadding * 2
+            let triggerY = collapsedRect.origin.y - triggerVerticalPadding
+            let triggerHeight = collapsedRect.height + triggerVerticalPadding * 2
+            let triggerRect = NSRect(x: triggerX, y: triggerY, width: triggerWidth, height: triggerHeight)
+            triggerPanel.setFrame(triggerRect, display: true)
+        }
+        
+        if let trayWindow = trayWindow {
+            let target = isExpanded ? expandedRect : collapsedRect
+            trayWindow.setFrame(target!, display: true)
+            
+            let hosting = NSHostingController(rootView: Tray(model: trayModel, uiState: trayUIState, topPadding: notchHeight))
+            trayWindow.contentViewController = hosting
+        }
+    }
 }
