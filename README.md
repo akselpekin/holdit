@@ -1,4 +1,4 @@
-![holdit Logo](holdit_icon_raw.png)
+![holdit Logo](holdit_new_logo_raw.png)
 
 # holdit
 
