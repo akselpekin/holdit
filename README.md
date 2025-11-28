@@ -1,4 +1,4 @@
-![holdit Logo](holdit_new_logo_raw.png)
+<img src="holdit_new_logo_raw.png" alt="holdit Logo" width="50%">
 
 # holdit
 
